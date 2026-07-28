@@ -1,0 +1,40 @@
+{
+  "2871525377": {
+    "key": "s1-4",
+    "version": "3.0",
+    "platform": [
+      "web",
+      "aos",
+      "ios"
+    ],
+    "feature": "getting-started",
+    "user": [
+      "all"
+    ],
+    "step": 1,
+    "order": 21,
+    "confluence_page_ids": {
+      "ko": "2929131622",
+      "ja": "2929229877"
+    }
+  },
+  "2950004737": {
+    "key": "s1-5",
+    "version": "3.0",
+    "platform": [
+      "web",
+      "aos",
+      "ios"
+    ],
+    "feature": "getting-started",
+    "user": [
+      "surveyor"
+    ],
+    "step": 1,
+    "order": 22,
+    "confluence_page_ids": {
+      "ko": "2949545996",
+      "ja": "2948825233"
+    }
+  }
+}
