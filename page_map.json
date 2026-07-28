@@ -36,5 +36,22 @@
       "ko": "2949545996",
       "ja": "2948825233"
     }
+  },
+  "2871853077": {
+    "key": "s2-2",
+    "version": "3.0",
+    "platform": [
+      "web",
+      "aos"
+    ],
+    "feature": "survey",
+    "user": [
+      "surveyor",
+      "team-admin",
+      "collaborator"
+    ],
+    "step": 2,
+    "order": 5,
+    "confluence_page_ids": {}
   }
 }
