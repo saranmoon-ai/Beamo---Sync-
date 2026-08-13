@@ -1,11 +1,11 @@
-import sys, os, re, json, argparse, subprocess, requests
+import sys, os, re, json, argparse, subprocess, requests, datetime
 from sync import (
     CONF_EMAIL, CONF_TOKEN,
     get_page_id, fetch_page, fetch_attachments, detect_language, load_glossary, fix_terms,
 )
 from publish_confluence import (
     protect_macros, restore_macros, call_translation_api,
-    find_child_page, PARENT_PAGE_ID, SPACE_KEY,
+    find_child_page, PARENT_PAGE_ID, SPACE_KEY, OUTPUT_LOG_PARENT_ID,
 )
 
 # GitHub Actions는 이 환경변수를 자동으로 "true"로 설정함.
@@ -585,6 +585,42 @@ def main():
 
     print("[6/6] 웹사이트 파일 갱신 및 커밋 중...")
     update_site_content(mapping, site_i18n)
+
+    # --- 시작: Output folder에 실행 결과 로그/백업 페이지 생성 (실패해도 파이프라인 유지) ---
+    try:
+        # 로그 제목: <문서 key> - YYYY-MM-DD (UTC)
+        log_title = mapping.get("key", page_id) + " - " + datetime.datetime.utcnow().strftime("%Y-%m-%d")
+
+        # 번역된 언어 목록
+        langs = sorted(site_i18n.keys())
+
+        # 본문 구성 (간단한 HTML)
+        lines = []
+        lines.append('<p>원본 Confluence URL: <a href="' + url + '">' + url + '</a></p>')
+        lines.append('<p>처리 시각 (UTC): ' + datetime.datetime.utcnow().isoformat() + '</p>')
+        lines.append('<p>번역된 언어: ' + ', '.join(langs) + '</p>')
+        lines.append('<h4>컨플루언스 게시 결과</h4>')
+        lines.append('<ul>')
+        for l in langs:
+            conf_id = mapping.get("confluence_page_ids", {}).get(l)
+            if conf_id:
+                conf_link = CONF_CONTENT_API.rstrip('/') + '/' + conf_id
+                lines.append('<li>' + l + ': <a href="' + conf_link + '">' + conf_link + '</a></li>')
+            else:
+                lines.append('<li>' + l + ': (컨플루언스에 게시되지 않음)</li>')
+        lines.append('</ul>')
+
+        log_html = '\n'.join(lines)
+
+        print("      Output folder에 실행 로그 저장 시도...")
+        saved_id = publish_page_tracked(OUTPUT_LOG_PARENT_ID, SPACE_KEY, log_title, log_html, None)
+        if saved_id:
+            print("      Output log 저장 완료: " + saved_id)
+        else:
+            print("      WARNING: Output log 저장 실패")
+    except Exception as e:
+        print("      WARNING: Output log 생성 중 오류 발생(무시하고 계속): " + str(e))
+    # --- 끝 ---
 
     if CI_MODE:
         pr_url = git_commit_site_ci(key, title, page_id)
