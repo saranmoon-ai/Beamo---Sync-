@@ -487,7 +487,7 @@ def sync_repo_commit_page_map(key, title):
     if r.returncode == 0:
         return  # 변경 없음
     subprocess.run(["git", "add", "page_map.json"], cwd=AX_DIR, check=True)
-    msg = "새 문서 매핑 추가: " + key + " - " + title
+    msg = "page_map.json 갱신: " + key + " - " + title
     subprocess.run(["git", "commit", "-m", msg], cwd=AX_DIR, check=True)
     subprocess.run(["git", "push"], cwd=AX_DIR, check=True)
 
@@ -580,6 +580,10 @@ def main():
             if new_id:
                 mapping["confluence_page_ids"][lang] = new_id
                 save_mapping(page_id, mapping)
+                if CI_MODE:
+                    # CI 실행기는 작업 끝나면 디스크가 사라지므로, 로컬 파일 저장만으로는
+                    # 부족함 - Sync 저장소에 바로 커밋+push 해서 다음 실행에 이어지게 함.
+                    sync_repo_commit_page_map(key, title)
         else:
             print("      (" + lang_name + "용 컨플루언스 상위 페이지가 없어 컨플루언스 게시는 건너뜀)")
 
