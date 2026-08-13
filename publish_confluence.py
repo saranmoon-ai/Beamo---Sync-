@@ -10,6 +10,7 @@ PARENT_PAGE_ID = {
     "ja": "2929197130",  # [Beamo 3.0]使用者マニュアル＿日本語
 }
 SPACE_KEY = "B3EUM"
+OUTPUT_LOG_PARENT_ID = "2948988954"  # "Output folder" (space B3EUM)
 # =========================================
 
 
