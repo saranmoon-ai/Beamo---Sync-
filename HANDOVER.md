@@ -265,6 +265,12 @@ gh api --method PUT repos/saranmoon-ai/Beamo-manual-3.0/actions/permissions/work
 - [ ] **`SYNC_REPO_TOKEN`** (Actions가 `Beamo---Sync-` 저장소를 체크아웃/push하는 데 쓰는 fine-grained PAT): 발급자 계정이 비활성화되거나 PAT 만료일이 지나면 CI가 전부 실패합니다. 새 계정으로 재발급 후 `Beamo-manual-3.0` 저장소 Secrets에 갱신
 - [ ] **GitHub OAuth App** (편집기 `/admin` 로그인용): 소유권/Client Secret 확인 (Settings → Developer settings → OAuth Apps). 재발급하면 Cloudflare 워커의 "Variables and secrets"에도 반드시 다시 등록
 - [ ] **Cloudflare 계정** (`saran-moon`, OAuth 프록시 워커 `beamo-cms-oauth` 호스팅): 새 담당자를 팀 멤버로 초대하거나 계정 자체를 이전
-- [ ] **"Allow GitHub Actions to create and approve pull requests" 저장소 설정**: 위 8번 항목 참고 — 저장소를 새로 만들었다면 반드시 켜져 있는지 확인
+- [ ] **"Allow GitHub Actions to create and approve pull requests" 저장소 설정** (2026-08-26 기준 `Beamo-manual-3.0`에서는 켜져 있음, 확인 완료): 새 담당자에게 넘기거나 저장소를 새로 만들었다면(fork, transfer, 재생성 등) 이 설정이 꺼진 상태로 리셋되니 반드시 다시 확인할 것.
+  - 확인/설정 위치: `Beamo-manual-3.0` 저장소 → **Settings → Actions → General → Workflow permissions** → "Allow GitHub Actions to create and approve pull requests" 체크박스 확인 후 **Save** (URL: `https://github.com/saranmoon-ai/Beamo-manual-3.0/settings/actions`)
+  - 또는 관리자 권한 계정으로 명령줄에서 한 번에:
+    ```
+    gh api --method PUT repos/saranmoon-ai/Beamo-manual-3.0/actions/permissions/workflow -f default_workflow_permissions=write -F can_approve_pull_request_reviews=true
+    ```
+  - 자세한 배경(왜 필요한지)은 위 8번 항목 참고
 - [ ] **위 시크릿 4종(`CONF_EMAIL`/`CONF_TOKEN`/`ANTHROPIC_API_KEY`/`SYNC_REPO_TOKEN`)이 `Beamo-manual-3.0` 저장소 Settings → Secrets and variables → Actions에 실제로 등록돼 있는지 재확인** — 저장소를 새로 만들거나 fork한 경우 Secrets는 자동으로 복사되지 않습니다
 - [ ] **용어집(`glossary.csv`) 관리 프로세스 인수인계**: 이 파일을 누가, 어떤 방식으로 최신 상태로 유지하는지 확인 (담당자마다 다를 수 있는 부분이라 별도 확인 필요) 또한 새롭게 업데이트가 필요한 경우 클로드 요청하거나 CSV 파일 새로 업데이트할 것. 
