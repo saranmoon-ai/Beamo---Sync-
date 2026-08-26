@@ -455,19 +455,50 @@ def git_commit_site(key, title):
     r = subprocess.run(["git", "commit", "-m", msg], cwd=SITE_DIR, capture_output=True, text=True)
     return r.returncode == 0
 
+def _run(cmd, cwd):
+    """capture_output으로 실행하고 CompletedProcess를 그대로 반환 (예외를 던지지 않음)."""
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+
+def _find_open_pr_url(branch):
+    """같은 브랜치명으로 이미 열려있는 PR이 있으면 그 URL을, 없으면 빈 문자열을 반환."""
+    r = _run(["gh", "pr", "list", "--head", branch, "--state", "open", "--json", "url", "--jq", ".[0].url"], SITE_DIR)
+    return r.stdout.strip() if r.returncode == 0 else ""
 
 def git_commit_site_ci(key, title, page_id):
-    """CI 모드: 새 브랜치를 만들어 커밋 + push 후 PR을 연다. PR URL(또는 None)을 반환."""
+    """CI 모드: 새 브랜치를 만들어 커밋 + push 후 PR을 연다. PR URL(또는 None)을 반환.
+
+    브랜치명이 "translate/<key>-<page_id>"로 문서마다 고정되어 있어서, 이전 실행이 만든
+    원격 브랜치가 아직 남아있으면(예: 이전 실행이 push 이후 단계에서 실패했거나, PR이
+    머지/종료된 뒤에도 브랜치가 삭제되지 않은 경우) 매번 fresh checkout에서 새로 만든
+    로컬 브랜치와 히스토리가 갈라져 있어 push가 non-fast-forward로 거부되고 그대로
+    스크립트가 죽는 문제가 있었다. 아래에서는 그 경우를 감지해서:
+      1) 같은 브랜치로 이미 열린 PR이 있으면 그 PR을 그대로 재사용하고,
+      2) 열린 PR이 없는(=버려진) 브랜치면 원격 브랜치를 정리하고 한 번 더 push를 시도한다.
+    """
     branch = "translate/" + key + "-" + page_id
     subprocess.run(["git", "checkout", "-b", branch], cwd=SITE_DIR, check=True)
     subprocess.run(["git", "add", "content/articles", "images"], cwd=SITE_DIR)
     msg = "자동 번역 반영: " + key + " - " + title
     r = subprocess.run(["git", "commit", "-m", msg], cwd=SITE_DIR, capture_output=True, text=True)
     if r.returncode != 0:
-        print("      변경사항이 없어 커밋하지 않았습니다.")
+        print(" 변경사항이 없어 커밋하지 않았습니다.")
         return None
 
-    subprocess.run(["git", "push", "-u", "origin", branch], cwd=SITE_DIR, check=True)
+    push = _run(["git", "push", "-u", "origin", branch], SITE_DIR)
+    if push.returncode != 0:
+        print(" WARNING: push 실패 (브랜치가 이미 원격에 있는 것으로 보입니다): " + push.stderr.strip())
+
+        existing_pr_url = _find_open_pr_url(branch)
+        if existing_pr_url:
+            print(" 동일 브랜치로 이미 열린 PR이 있어 그대로 사용합니다: " + existing_pr_url)
+            return existing_pr_url
+
+        print(" 열린 PR이 없는 오래된(버려진) 브랜치로 판단, 원격 브랜치를 정리하고 다시 push합니다.")
+        _run(["git", "push", "origin", "--delete", branch], SITE_DIR)
+        retry = _run(["git", "push", "-u", "origin", branch], SITE_DIR)
+        if retry.returncode != 0:
+            print(" ERROR: 재시도에도 push 실패: " + retry.stderr.strip())
+            return None
 
     r = subprocess.run(
         ["gh", "pr", "create", "--title", msg, "--body",
@@ -476,10 +507,9 @@ def git_commit_site_ci(key, title, page_id):
          "--head", branch],
         cwd=SITE_DIR, capture_output=True, text=True)
     if r.returncode != 0:
-        print("      WARNING: PR 생성 실패: " + r.stderr.strip())
+        print(" WARNING: PR 생성 실패: " + r.stderr.strip())
         return None
     return r.stdout.strip()
-
 
 def sync_repo_commit_page_map(key, title):
     """CI 모드에서 새 문서 매핑이 생겼을 때, page_map.json을 Sync 저장소(main)에 바로 커밋+push."""
