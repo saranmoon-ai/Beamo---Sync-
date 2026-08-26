@@ -18,22 +18,5 @@
       "ko": "2929033300",
       "ja": "2929754155"
     }
-  },
-  "3028156419": {
-    "key": "s1-4",
-    "version": "3.0",
-    "platform": [
-      "web"
-    ],
-    "feature": "appendix",
-    "user": [
-      "all"
-    ],
-    "step": 1,
-    "order": 21,
-    "confluence_page_ids": {
-      "ko": "3028254751",
-      "ja": "3028615172"
-    }
   }
 }
