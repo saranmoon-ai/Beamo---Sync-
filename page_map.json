@@ -31,6 +31,8 @@
     ],
     "step": 1,
     "order": 21,
-    "confluence_page_ids": {}
+    "confluence_page_ids": {
+      "ko": "3028090893"
+    }
   }
 }
