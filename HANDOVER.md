@@ -230,3 +230,41 @@ Automator 버튼은 이 컴퓨터(사장님 Mac)에서만 동작합니다. 팀�
 ---
 
 *최초 작성: 2026-07-24 (콘텐츠 구조 분리 + 편집기 도입 작업 완료 시점)*
+
+---
+
+## 8. 알려진 이슈 / 수정 이력
+
+**2026-08-26 — 같은 문서를 재실행하면 파이프라인이 죽던 버그 (수정 완료)**
+
+`git_commit_site_ci`의 브랜치명이 `translate/<key>-<page_id>`로 문서마다 고정되어 있어서, 이전 실행이 만든 원격 브랜치가 아직 남아있으면(예: 이전 실행이 push 이후 단계에서 실패했거나, PR이 머지/종료된 뒤에도 브랜치가 삭제되지 않은 경우) 매번 새로 만든 로컬 브랜치와 히스토리가 갈라져 있어 push가 non-fast-forward로 거부되고 그대로 스크립트가 죽는 문제가 있었습니다.
+
+수정 내용: push가 실패하면 (1) 같은 브랜치로 이미 열린 PR이 있는지 확인해서 있으면 그 PR을 재사용하고, (2) 열린 PR이 없는 버려진 브랜치면 원격 브랜치를 정리하고 한 번 더 push를 시도하도록 `publish_to_site.py`의 `git_commit_site_ci`를 수정했습니다. 커밋: `2af1431` (`saranmoon-ai/Beamo---Sync-`).
+
+**2026-08-26 — PR 자동 생성이 실패하는 문제 (저장소 설정 문제, 코드 버그 아님)**
+
+위 수정을 실제로 테스트하던 중, `gh pr create`가 `GitHub Actions is not permitted to create or approve pull requests`로 실패하는 걸 발견했습니다. 원인은 `Beamo-manual-3.0` 저장소의 **Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"** 체크박스가 꺼져 있었기 때문입니다. 스크립트 코드와는 무관한, 저장소 자체의 보안 설정입니다.
+
+⚠️ **이 설정은 저장소를 새로 만들거나(fork, transfer, 재생성 등) 기본값으로 되돌리면 다시 꺼진 상태로 시작됩니다.** 껐다 켜는 건 코드로 안 되고(워크플로가 스스로에게 권한을 더 줄 수는 없음, GitHub의 의도된 보안 제약), 저장소 관리자 권한이 있는 사람이 한 번 켜줘야 합니다. UI로 켜는 방법은 위 경로 그대로 체크박스 클릭 후 저장이고, 명령줄로 한 번에 켜고 싶다면 저장소 관리자 권한이 있는 계정으로 다음을 실행하면 됩니다:
+
+```
+gh api --method PUT repos/saranmoon-ai/Beamo-manual-3.0/actions/permissions/workflow \
+  -f default_workflow_permissions=write \
+  -F can_approve_pull_request_reviews=true
+```
+
+---
+
+## 9. 저장소를 다른 사람에게 넘길 때 체크리스트
+
+이 시스템은 여러 개인 계정(깃허브 개인 PAT, 컨플루언스 개인 계정, Cloudflare 개인 계정 등)에 묶여 있는 부분이 많습니다. 담당자가 바뀌거나 저장소 소유권이 이전될 때, 아래 항목을 확인하지 않으면 **아무 에러 메시지 없이 조용히 멈추는 부분이 많으니** 순서대로 확인해주세요.
+
+- [ ] **저장소 접근 권한**: 새 담당자를 `saranmoon-ai/Beamo-manual-3.0`(쓰기 권한 필요)과 `saranmoon-ai/Beamo---Sync-`(최소 읽기 권한)에 Collaborator로 추가
+- [ ] **컨플루언스 API 인증** (`CONF_EMAIL`, `CONF_TOKEN`): 기존 발급자의 컨플루언스 계정이 비활성화되면 번역 파이프라인이 조용히 실패합니다. 새 계정 기준으로 토큰을 재발급하고 `~/.zshrc`(로컬)와 `Beamo-manual-3.0` 저장소 Secrets(팀원용 Actions) 둘 다 갱신
+- [ ] **번역 API 키** (`ANTHROPIC_API_KEY`): 개인 키인지 조직 소유 키인지 확인. 개인 키라면 조직 소유 키로 교체 권장
+- [ ] **`SYNC_REPO_TOKEN`** (Actions가 `Beamo---Sync-` 저장소를 체크아웃/push하는 데 쓰는 fine-grained PAT): 발급자 계정이 비활성화되거나 PAT 만료일이 지나면 CI가 전부 실패합니다. 새 계정으로 재발급 후 `Beamo-manual-3.0` 저장소 Secrets에 갱신
+- [ ] **GitHub OAuth App** (편집기 `/admin` 로그인용): 소유권/Client Secret 확인 (Settings → Developer settings → OAuth Apps). 재발급하면 Cloudflare 워커의 "Variables and secrets"에도 반드시 다시 등록
+- [ ] **Cloudflare 계정** (`saran-moon`, OAuth 프록시 워커 `beamo-cms-oauth` 호스팅): 새 담당자를 팀 멤버로 초대하거나 계정 자체를 이전
+- [ ] **"Allow GitHub Actions to create and approve pull requests" 저장소 설정**: 위 8번 항목 참고 — 저장소를 새로 만들었다면 반드시 켜져 있는지 확인
+- [ ] **위 시크릿 4종(`CONF_EMAIL`/`CONF_TOKEN`/`ANTHROPIC_API_KEY`/`SYNC_REPO_TOKEN`)이 `Beamo-manual-3.0` 저장소 Settings → Secrets and variables → Actions에 실제로 등록돼 있는지 재확인** — 저장소를 새로 만들거나 fork한 경우 Secrets는 자동으로 복사되지 않습니다
+- [ ] **용어집(`glossary.csv`) 관리 프로세스 인수인계**: 이 파일을 누가, 어떤 방식으로 최신 상태로 유지하는지 확인 (담당자마다 다를 수 있는 부분이라 별도 확인 필요)
