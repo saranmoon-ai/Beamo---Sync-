@@ -267,4 +267,4 @@ gh api --method PUT repos/saranmoon-ai/Beamo-manual-3.0/actions/permissions/work
 - [ ] **Cloudflare 계정** (`saran-moon`, OAuth 프록시 워커 `beamo-cms-oauth` 호스팅): 새 담당자를 팀 멤버로 초대하거나 계정 자체를 이전
 - [ ] **"Allow GitHub Actions to create and approve pull requests" 저장소 설정**: 위 8번 항목 참고 — 저장소를 새로 만들었다면 반드시 켜져 있는지 확인
 - [ ] **위 시크릿 4종(`CONF_EMAIL`/`CONF_TOKEN`/`ANTHROPIC_API_KEY`/`SYNC_REPO_TOKEN`)이 `Beamo-manual-3.0` 저장소 Settings → Secrets and variables → Actions에 실제로 등록돼 있는지 재확인** — 저장소를 새로 만들거나 fork한 경우 Secrets는 자동으로 복사되지 않습니다
-- [ ] **용어집(`glossary.csv`) 관리 프로세스 인수인계**: 이 파일을 누가, 어떤 방식으로 최신 상태로 유지하는지 확인 (담당자마다 다를 수 있는 부분이라 별도 확인 필요)
+- [ ] **용어집(`glossary.csv`) 관리 프로세스 인수인계**: 이 파일을 누가, 어떤 방식으로 최신 상태로 유지하는지 확인 (담당자마다 다를 수 있는 부분이라 별도 확인 필요) 또한 새롭게 업데이트가 필요한 경우 클로드 요청하거나 CSV 파일 새로 업데이트할 것. 
